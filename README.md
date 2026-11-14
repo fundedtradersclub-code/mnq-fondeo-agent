@@ -12,6 +12,8 @@ operación no cabe en tu riesgo o en el margen de tu cuenta, no la marca y te di
 > fondeo: los valores de drawdown que trae son referenciales. **Verifica siempre las reglas vigentes
 > de tu cuenta en el panel de tu firma.**
 
+Pine Script v5 · probado: carga en TradingView sobre MNQ1!.
+
 ## Qué hace
 
 **Señales**
@@ -44,11 +46,14 @@ operación no cabe en tu riesgo o en el margen de tu cuenta, no la marca y te di
 ## Instalación
 
 1. En TradingView abre un gráfico de **MNQ1!** (de 1 a 5 minutos).
-2. Abajo, pestaña **Pine Editor** → pega el contenido de [`mnq-fondeo-agent.pine`](mnq-fondeo-agent.pine).
-3. Pulsa **Añadir al gráfico**.
-4. En la configuración del indicador (⚙️), completa **Cuenta de fondeo**: tamaño, saldo actual y saldo
+2. Abajo, pestaña **Pine Editor** → menú del nombre del script → **Crear nuevo** → **Indicador**.
+3. **Borra todo el texto de ejemplo** (Ctrl + A y Supr) y pega el contenido de
+   [`mnq-fondeo-agent.pine`](mnq-fondeo-agent.pine). Si queda el ejemplo, TradingView muestra el error
+   *"Scripts must contain one declaration statement… Your script has 2 (CE10243)"*.
+4. Pulsa **Guardar** y luego **Añadir al gráfico**.
+5. En la configuración del indicador (⚙️), completa **Cuenta de fondeo**: tamaño, saldo actual y saldo
    máximo alcanzado, tal como aparecen en el panel de tu firma.
-5. Actualiza las fechas de **Noticias** (IPC, empleo, Fed) de la semana.
+6. Actualiza las fechas de **Noticias** (IPC, empleo, Fed) de la semana.
 
 Para alertas: botón ⏰ → Condición: *MNQ Fondeo Agent v5* → "Cualquier llamada a alert()" para recibir
 entrada, salida y breakeven con precios.
