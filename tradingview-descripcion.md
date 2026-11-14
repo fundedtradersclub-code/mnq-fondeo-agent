@@ -1,49 +1,12 @@
 # Texto para publicar en TradingView
 
-## Título
+Reglas de TradingView: el título va solo en inglés y la descripción debe empezar en inglés; otros idiomas pueden ir después. Categorías: se eligen hasta 3 en el menú "Category" del formulario.
 
-MNQ Fondeo Agent v5: contratos por riesgo, breakeven y trailing drawdown
+## Title (copiar en el campo Title)
 
-## Descripción
+MNQ Funded Account Agent v5: risk-based contracts, breakeven and trailing drawdown
 
-MNQ Fondeo Agent es un asistente para operar futuros MNQ (Micro E-mini Nasdaq-100) en cuentas de fondeo de 25K y 50K. Su objetivo es que una buena entrada no termine en una cuenta perdida por un mal cálculo de tamaño o por acercarse demasiado al trailing drawdown.
-
-QUÉ HACE
-
-• Sesgo: el precio debe estar del mismo lado del VWAP y fuera del rango nocturno (máximo o mínimo entre las 18:00 y las 09:30 de Nueva York).
-• Confirmación: vela de impulso que rompe el máximo o mínimo de la vela anterior, con volumen sobre su promedio. Antes de la entrada marca un "setup casi confirmado".
-• Stop por ATR (con un mínimo en puntos) y objetivo en múltiplos de R.
-• Calcula cuántos contratos usar para no pasar del riesgo en dólares que elijas, con el valor del punto del contrato del gráfico (MNQ 2 USD, NQ 20 USD). Si ni un contrato cabe, no da la señal y lo indica en el gráfico.
-• Una operación a la vez: la sigue hasta el stop, el breakeven, el objetivo o el fin del horario. Mueve el stop a breakeven al llegar al nivel de R que configures.
-• Cuenta de fondeo: con tu saldo actual y tu saldo máximo calcula el nivel que no puedes tocar y el margen que te queda. Bloquea entradas cuyo riesgo se coma el colchón mínimo que definas.
-• Límites diarios: máximo de operaciones y pérdida diaria máxima (sobre las operaciones simuladas del indicador).
-• Bloqueo por noticias: hasta tres horarios en hora de Nueva York, con minutos de bloqueo antes y después.
-• Todo se calcula con la vela cerrada: las señales no cambian después de aparecer.
-
-EN EL GRÁFICO
-
-VWAP, rango nocturno, máximo y mínimo del día anterior, entrada, stop y objetivo de la operación activa, fondo de color para el horario de entradas, noticias y límite diario, y una tabla con: límite de la cuenta, margen restante, operaciones del día, contratos y riesgo, P&L simulado, horario, noticias y si puedes operar.
-
-CÓMO USARLO
-
-1. Gráfico de MNQ1! en 1 a 5 minutos.
-2. En la configuración, sección "Cuenta de fondeo": tamaño de cuenta, saldo actual y saldo máximo alcanzado tal como aparecen en el panel de tu firma. Actualízalos antes de cada sesión.
-3. Ajusta el riesgo por operación, el máximo de contratos y el horario de entradas (por defecto 09:30 a 11:45 de Nueva York).
-4. Carga las noticias de la semana (IPC, empleo, Fed) en la sección "Noticias".
-5. Para alertas con precios de entrada, salida y breakeven, crea una alerta con la condición "Cualquier llamada a alert()". También hay condiciones separadas para setups, entradas, noticias, máximo diario y poco margen.
-
-LÍMITES
-
-• Es un indicador: no ejecuta órdenes ni ve tu cuenta real. El saldo lo escribes tú, y el P&L del día es una simulación de sus propias señales.
-• Las entradas se simulan al cierre de la vela de señal; en real puede haber deslizamiento. Si una vela toca el stop y el objetivo, se asume el stop.
-• Los valores de trailing drawdown por defecto (1.500 para 25K, 2.500 para 50K) son referenciales y editables. Las reglas cambian según la firma y la cuenta: verifícalas siempre en tu panel.
-• No tiene relación con ninguna firma de fondeo.
-
-Este indicador es una herramienta de apoyo y no constituye asesoría financiera. Operar futuros implica un riesgo alto de pérdida; los resultados pasados o simulados no garantizan resultados futuros.
-
----
-
-## Description (English)
+## Description (copiar todo lo que sigue en el campo Description)
 
 MNQ Fondeo Agent is an assistant for trading MNQ (Micro E-mini Nasdaq-100) futures on 25K and 50K funded/evaluation accounts. Its goal is to keep a good entry from blowing an account because of bad position sizing or getting too close to the trailing drawdown.
 
@@ -79,3 +42,42 @@ LIMITATIONS
 • Not affiliated with any prop firm.
 
 This indicator is a support tool and is not financial advice. Trading futures involves a high risk of loss; past or simulated results do not guarantee future results.
+
+———
+
+DESCRIPCIÓN EN ESPAÑOL
+
+MNQ Fondeo Agent es un asistente para operar futuros MNQ (Micro E-mini Nasdaq-100) en cuentas de fondeo de 25K y 50K. Su objetivo es que una buena entrada no termine en una cuenta perdida por un mal cálculo de tamaño o por acercarse demasiado al trailing drawdown.
+
+QUÉ HACE
+
+• Sesgo: el precio debe estar del mismo lado del VWAP y fuera del rango nocturno (máximo o mínimo entre las 18:00 y las 09:30 de Nueva York).
+• Confirmación: vela de impulso que rompe el máximo o mínimo de la vela anterior, con volumen sobre su promedio. Antes de la entrada marca un "setup casi confirmado".
+• Stop por ATR (con un mínimo en puntos) y objetivo en múltiplos de R.
+• Calcula cuántos contratos usar para no pasar del riesgo en dólares que elijas, con el valor del punto del contrato del gráfico (MNQ 2 USD, NQ 20 USD). Si ni un contrato cabe, no da la señal y lo indica en el gráfico.
+• Una operación a la vez: la sigue hasta el stop, el breakeven, el objetivo o el fin del horario. Mueve el stop a breakeven al llegar al nivel de R que configures.
+• Cuenta de fondeo: con tu saldo actual y tu saldo máximo calcula el nivel que no puedes tocar y el margen que te queda. Bloquea entradas cuyo riesgo se coma el colchón mínimo que definas.
+• Límites diarios: máximo de operaciones y pérdida diaria máxima (sobre las operaciones simuladas del indicador).
+• Bloqueo por noticias: hasta tres horarios en hora de Nueva York, con minutos de bloqueo antes y después.
+• Todo se calcula con la vela cerrada: las señales no cambian después de aparecer.
+
+EN EL GRÁFICO
+
+VWAP, rango nocturno, máximo y mínimo del día anterior, entrada, stop y objetivo de la operación activa, fondo de color para el horario de entradas, noticias y límite diario, y una tabla con: límite de la cuenta, margen restante, operaciones del día, contratos y riesgo, P&L simulado, horario, noticias y si puedes operar.
+
+CÓMO USARLO
+
+1. Gráfico de MNQ1! en 1 a 5 minutos.
+2. En la configuración, sección "Cuenta de fondeo": tamaño de cuenta, saldo actual y saldo máximo alcanzado tal como aparecen en el panel de tu firma. Actualízalos antes de cada sesión.
+3. Ajusta el riesgo por operación, el máximo de contratos y el horario de entradas (por defecto 09:30 a 11:45 de Nueva York).
+4. Carga las noticias de la semana (IPC, empleo, Fed) en la sección "Noticias".
+5. Para alertas con precios de entrada, salida y breakeven, crea una alerta con la condición "Cualquier llamada a alert()". También hay condiciones separadas para setups, entradas, noticias, máximo diario y poco margen.
+
+LÍMITES
+
+• Es un indicador: no ejecuta órdenes ni ve tu cuenta real. El saldo lo escribes tú, y el P&L del día es una simulación de sus propias señales.
+• Las entradas se simulan al cierre de la vela de señal; en real puede haber deslizamiento. Si una vela toca el stop y el objetivo, se asume el stop.
+• Los valores de trailing drawdown por defecto (1.500 para 25K, 2.500 para 50K) son referenciales y editables. Las reglas cambian según la firma y la cuenta: verifícalas siempre en tu panel.
+• No tiene relación con ninguna firma de fondeo.
+
+Este indicador es una herramienta de apoyo y no constituye asesoría financiera. Operar futuros implica un riesgo alto de pérdida; los resultados pasados o simulados no garantizan resultados futuros.
