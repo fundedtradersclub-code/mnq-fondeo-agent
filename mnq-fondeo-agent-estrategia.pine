@@ -1,0 +1,233 @@
+//@version=5
+strategy("MNQ Fondeo Agent v6 - operaciones simuladas", shorttitle="MNQ Fondeo v6", overlay=true, initial_capital=25000, currency=currency.USD, pyramiding=0, commission_type=strategy.commission.cash_per_contract, commission_value=0.62, slippage=1, margin_long=0, margin_short=0, process_orders_on_close=true, max_labels_count=500, max_boxes_count=500)
+
+// Abre y cierra operaciones SIMULADAS solo en TradingView, para copiarlas a mano en tu cuenta.
+// No se conecta a ningún bróker. No es asesoría financiera ni garantiza pasar una evaluación.
+// Sin relación con Apex Trader Funding ni con ninguna firma de fondeo: verifica las reglas de tu cuenta.
+// Comisión (0,62 por contrato y lado) y deslizamiento (1 tick) se cambian en Configuración > Propiedades.
+// Licencia MIT · https://github.com/fundedtradersclub-code/mnq-fondeo-agent
+
+// ═══════════════════════ MODO ═══════════════════════
+gModo        = "Modo"
+abrirEnTV    = input.bool(true, "Abrir operaciones simuladas en TradingView", group=gModo, tooltip="Encendido: la estrategia abre y cierra operaciones simuladas y las dibuja. Apagado: solo marca señales y avisa.")
+mostrarZonas = input.bool(true, "Dibujar zonas de stop loss y take profit", group=gModo)
+
+// ═══════════════════════ CUENTA DE FONDEO ═══════════════════════
+gCuenta      = "Cuenta de fondeo"
+tamanoCuenta = input.string("25K", "Tamaño de cuenta", options=["25K", "50K"], group=gCuenta)
+ddManual     = input.float(0, "Trailing drawdown ($) · 0 = valor típico (25K: 1500 / 50K: 2500)", minval=0, step=50, group=gCuenta)
+saldoActual  = input.float(25000, "Saldo actual ($) · actualízalo antes de operar", step=50, group=gCuenta)
+saldoMaximo  = input.float(25000, "Saldo máximo alcanzado ($) · del panel de tu cuenta", step=50, group=gCuenta)
+colchonMin   = input.float(300, "Colchón mínimo sobre el límite ($)", minval=0, step=50, group=gCuenta)
+
+// ═══════════════════════ RIESGO POR OPERACIÓN ═══════════════════════
+gRiesgo       = "Riesgo por operación"
+riskDollars   = input.float(150, "Riesgo máximo por operación ($)", minval=25, maxval=1000, step=10, group=gRiesgo)
+maxContratos  = input.int(3, "Máximo de contratos", minval=1, maxval=50, group=gRiesgo)
+maxTradesDay  = input.int(3, "Máximo de operaciones por día", minval=1, maxval=10, group=gRiesgo)
+perdidaDiaMax = input.float(300, "Pérdida diaria máxima ($) · 0 = sin límite", minval=0, step=50, group=gRiesgo)
+atrLength     = input.int(14, "ATR Length", minval=1, group=gRiesgo)
+atrMultiplier = input.float(1.4, "ATR multiplicador (stop)", minval=0.5, maxval=4, step=0.1, group=gRiesgo)
+stopMinPts    = input.float(8, "Stop mínimo (puntos)", minval=1, step=1, group=gRiesgo)
+objetivoR     = input.float(1.5, "Take profit (R)", minval=0.5, maxval=5, step=0.1, group=gRiesgo)
+breakevenR    = input.float(1.0, "Mover el stop a breakeven al llegar a (R) · 0 = no", minval=0, maxval=5, step=0.1, group=gRiesgo)
+
+// ═══════════════════════ HORARIOS (HORA DE NUEVA YORK) ═══════════════════════
+gSesion        = "Horarios (hora de Nueva York)"
+sesionEntradas = input.session("0930-1145", "Horario para abrir operaciones", group=gSesion)
+sesionGestion  = input.session("0930-1600", "Horario máximo con operación abierta", group=gSesion)
+sesionNocturna = input.session("1800-0930", "Sesión nocturna (rango ON)", group=gSesion)
+volLength      = input.int(20, "Volumen promedio Length", minval=1, group=gSesion)
+
+// ═══════════════════════ NOTICIAS ═══════════════════════
+gNoticias       = "Noticias (hora de Nueva York)"
+useNewsFilter   = input.bool(true, "Activar filtro de noticias", group=gNoticias)
+newsBlackoutMin = input.int(20, "Minutos de bloqueo antes y después", minval=5, maxval=90, group=gNoticias)
+// -05:00 = hora de Nueva York en invierno (noviembre a marzo); en verano usa -04:00.
+news1 = input.time(timestamp("2026-11-10T08:30:00-05:00"), "Noticia 1", group=gNoticias)
+news2 = input.time(timestamp("2026-12-04T08:30:00-05:00"), "Noticia 2", group=gNoticias)
+news3 = input.time(timestamp("2026-12-09T14:00:00-05:00"), "Noticia 3", group=gNoticias)
+
+// ═══════════════════════ DATOS BASE ═══════════════════════
+tz         = "America/New_York"
+puntoValor = na(syminfo.pointvalue) or syminfo.pointvalue <= 0 ? 2.0 : syminfo.pointvalue
+
+enEntradas = not na(time(timeframe.period, sesionEntradas, tz))
+enGestion  = not na(time(timeframe.period, sesionGestion, tz))
+enNocturna = not na(time(timeframe.period, sesionNocturna, tz))
+nuevoDia   = nz(ta.change(time("D")), 1) != 0
+
+atr    = ta.atr(atrLength)
+vwap   = ta.vwap(hlc3)
+volAvg = ta.sma(volume, volLength)
+
+var float onAlto      = na
+var float onBajo      = na
+var float onAltoFinal = na
+var float onBajoFinal = na
+if enNocturna and not enNocturna[1]
+    onAlto := high
+    onBajo := low
+else if enNocturna
+    onAlto := na(onAlto) ? high : math.max(onAlto, high)
+    onBajo := na(onBajo) ? low : math.min(onBajo, low)
+if not enNocturna and enNocturna[1]
+    onAltoFinal := onAlto
+    onBajoFinal := onBajo
+
+maxAnterior = request.security(syminfo.tickerid, "D", high[1], lookahead=barmerge.lookahead_on)
+minAnterior = request.security(syminfo.tickerid, "D", low[1], lookahead=barmerge.lookahead_on)
+
+msBloqueo = newsBlackoutMin * 60 * 1000
+cercaDe(t) => not na(t) and math.abs(time - t) <= msBloqueo
+enNoticia = useNewsFilter and (cercaDe(news1) or cercaDe(news2) or cercaDe(news3))
+
+// ═══════════════════════ CUENTA Y TAMAÑO DE POSICIÓN ═══════════════════════
+ddLimite = ddManual > 0 ? ddManual : (tamanoCuenta == "25K" ? 1500.0 : 2500.0)
+umbralDD = saldoMaximo - ddLimite
+margenDD = saldoActual - umbralDD
+
+stopDist     = math.max(atr * atrMultiplier, stopMinPts)
+riesgoPorCto = stopDist * puntoValor
+ctosCalc     = math.min(maxContratos, math.floor(riskDollars / riesgoPorCto))
+riesgoTotal  = ctosCalc * riesgoPorCto
+tamanoOk     = ctosCalc >= 1
+margenOk     = margenDD - riesgoTotal >= colchonMin
+
+// ═══════════════════════ ESTADO ═══════════════════════
+var int    tradesHoy       = 0
+var float  netInicioDia    = 0.0
+var float  precioEnt       = na
+var float  stopIni         = na
+var float  stopAct         = na
+var float  objetivo        = na
+var int    contratos       = 0
+var bool   enBreakeven     = false
+var string idEntrada       = ""
+var int    cerradasPrevias = 0
+var box    cajaTP          = na
+var box    cajaSL          = na
+
+if nuevoDia
+    tradesHoy    := 0
+    netInicioDia := strategy.netprofit
+
+pnlHoy = strategy.netprofit - netInicioDia
+enPosicion = strategy.position_size != 0
+fmt(x) => str.tostring(x, format.mintick)
+
+// ═══════════════════════ OPERACIÓN CERRADA (stop, breakeven, take profit o fin de horario) ═══════════════════════
+if strategy.closedtrades > cerradasPrevias
+    i = strategy.closedtrades - 1
+    pxSalida = strategy.closedtrades.exit_price(i)
+    ganancia = strategy.closedtrades.profit(i)
+    fueLargo = strategy.closedtrades.size(i) > 0
+    motivo   = strategy.closedtrades.exit_comment(i)
+    txtRes   = (ganancia >= 0 ? "+$" : "-$") + str.tostring(math.abs(ganancia), "#")
+    label.new(bar_index, fueLargo ? high : low, "SALIDA · " + motivo + "\n" + fmt(pxSalida) + "\n" + txtRes, style=fueLargo ? label.style_label_down : label.style_label_up, color=ganancia > 0 ? color.new(color.green, 20) : ganancia < 0 ? color.new(color.red, 20) : color.new(color.gray, 20), textcolor=color.white, size=size.small)
+    alert("SALIDA " + syminfo.ticker + " · " + motivo + " en " + fmt(pxSalida) + " · " + txtRes + " · P&L del día: " + (pnlHoy >= 0 ? "+$" : "-$") + str.tostring(math.abs(pnlHoy), "#"), alert.freq_once_per_bar)
+    cerradasPrevias := strategy.closedtrades
+    enBreakeven     := false
+
+// ═══════════════════════ GESTIÓN DE LA OPERACIÓN ABIERTA ═══════════════════════
+if enPosicion
+    largo = strategy.position_size > 0
+    if not na(cajaTP)
+        box.set_right(cajaTP, bar_index + 1)
+    if not na(cajaSL)
+        box.set_right(cajaSL, bar_index + 1)
+    if breakevenR > 0 and not enBreakeven
+        r = math.abs(precioEnt - stopIni)
+        alcanzado = largo ? high >= precioEnt + r * breakevenR : low <= precioEnt - r * breakevenR
+        if alcanzado
+            stopAct     := precioEnt
+            enBreakeven := true
+            if not na(cajaSL)
+                box.set_bgcolor(cajaSL, color.new(color.blue, 85))
+                box.set_border_color(cajaSL, color.new(color.blue, 40))
+                box.set_text(cajaSL, "SL → breakeven " + fmt(precioEnt))
+            label.new(bar_index, largo ? high : low, "Mueve el SL a " + fmt(precioEnt), style=largo ? label.style_label_down : label.style_label_up, color=color.new(color.blue, 20), textcolor=color.white, size=size.tiny)
+            alert("MUEVE EL STOP A BREAKEVEN · " + syminfo.ticker + " · nuevo SL: " + fmt(precioEnt), alert.freq_once_per_bar)
+    strategy.exit("Salida", from_entry=idEntrada, stop=stopAct, limit=objetivo, comment_loss=enBreakeven ? "Breakeven" : "Stop loss", comment_profit="Take profit")
+    if not enGestion
+        strategy.close_all(comment="Fin de horario")
+
+// ═══════════════════════ SEÑALES ═══════════════════════
+sesgoLargo = close > vwap and not na(onAltoFinal) and close > onAltoFinal
+sesgoCorto = close < vwap and not na(onBajoFinal) and close < onBajoFinal
+confLargo  = close > open and close > high[1] and volume > volAvg
+confCorto  = close < open and close < low[1] and volume > volAvg
+
+limiteDiario = perdidaDiaMax > 0 and pnlHoy <= -perdidaDiaMax
+puedeOperar  = enEntradas and not enNoticia and tradesHoy < maxTradesDay and not limiteDiario and not enPosicion
+
+senalLargo = barstate.isconfirmed and puedeOperar and sesgoLargo and confLargo and tamanoOk and margenOk
+senalCorto = barstate.isconfirmed and puedeOperar and sesgoCorto and confCorto and tamanoOk and margenOk
+senalBloqueada = barstate.isconfirmed and puedeOperar and ((sesgoLargo and confLargo) or (sesgoCorto and confCorto)) and not (tamanoOk and margenOk)
+setupLargo = barstate.isconfirmed and puedeOperar and sesgoLargo and close > open and close > high[1] * 0.999 and volume > volAvg * 0.9 and not confLargo
+setupCorto = barstate.isconfirmed and puedeOperar and sesgoCorto and close < open and close < low[1] * 1.001 and volume > volAvg * 0.9 and not confCorto
+
+// Primer aviso: prepárate (precios aproximados con la vela actual).
+if setupLargo or setupCorto
+    l = setupLargo ? 1 : -1
+    txtSetup = "PREPÁRATE · posible " + (l == 1 ? "COMPRA" : "VENTA") + "\ncerca de " + fmt(close) + "\nSL aprox. " + fmt(close - l * stopDist) + "\nTP aprox. " + fmt(close + l * stopDist * objetivoR)
+    label.new(bar_index, l == 1 ? low : high, txtSetup, style=l == 1 ? label.style_label_up : label.style_label_down, color=color.new(l == 1 ? color.teal : color.orange, 20), textcolor=color.white, size=size.small)
+    alert(txtSetup + " · " + syminfo.ticker, alert.freq_once_per_bar)
+
+// Segundo aviso: entrada confirmada, con todo lo necesario para copiarla.
+if senalLargo or senalCorto
+    l = senalLargo ? 1 : -1
+    precioEnt   := close
+    stopIni     := close - l * stopDist
+    stopAct     := stopIni
+    objetivo    := close + l * stopDist * objetivoR
+    contratos   := ctosCalc
+    enBreakeven := false
+    tradesHoy   += 1
+    lado = l == 1 ? "COMPRA" : "VENTA"
+    txtEnt = lado + " #" + str.tostring(tradesHoy) + " · " + str.tostring(contratos) + " contrato(s)" + "\nEntrada: " + fmt(precioEnt) + "\nSL: " + fmt(stopIni) + "\nTP: " + fmt(objetivo) + "\nRiesgo: $" + str.tostring(contratos * riesgoPorCto, "#")
+    label.new(bar_index, l == 1 ? low : high, txtEnt, style=l == 1 ? label.style_label_up : label.style_label_down, color=l == 1 ? color.green : color.red, textcolor=color.white, size=size.normal)
+    alert("ENTRADA " + syminfo.ticker + " · " + str.replace_all(txtEnt, "\n", " · "), alert.freq_once_per_bar)
+    if mostrarZonas
+        derecha = abrirEnTV ? bar_index + 1 : bar_index + 15
+        cajaTP := box.new(bar_index, math.max(precioEnt, objetivo), derecha, math.min(precioEnt, objetivo), border_color=color.new(color.green, 40), bgcolor=color.new(color.green, 85), text="TP " + fmt(objetivo), text_color=color.green, text_size=size.small, text_halign=text.align_right, text_valign=l == 1 ? text.align_top : text.align_bottom)
+        cajaSL := box.new(bar_index, math.max(precioEnt, stopIni), derecha, math.min(precioEnt, stopIni), border_color=color.new(color.red, 40), bgcolor=color.new(color.red, 85), text="SL " + fmt(stopIni), text_color=color.red, text_size=size.small, text_halign=text.align_right, text_valign=l == 1 ? text.align_bottom : text.align_top)
+    if abrirEnTV
+        idEntrada := l == 1 ? "Compra" : "Venta"
+        strategy.entry(idEntrada, l == 1 ? strategy.long : strategy.short, qty=contratos, comment=lado + " " + str.tostring(contratos))
+        strategy.exit("Salida", from_entry=idEntrada, stop=stopIni, limit=objetivo, comment_loss="Stop loss", comment_profit="Take profit")
+
+if senalBloqueada
+    label.new(bar_index, close, not tamanoOk ? "Sin entrada:\nstop muy amplio\npara tu riesgo" : "Sin entrada:\npoco margen\nhasta el límite", style=label.style_label_left, color=color.new(color.gray, 40), textcolor=color.white, size=size.tiny)
+
+// ═══════════════════════ GRÁFICO ═══════════════════════
+plot(vwap, "VWAP", color=color.yellow, linewidth=2)
+plot(onAltoFinal, "Máximo nocturno (ON High)", color=color.new(color.green, 20), style=plot.style_linebr, linewidth=2)
+plot(onBajoFinal, "Mínimo nocturno (ON Low)", color=color.new(color.red, 20), style=plot.style_linebr, linewidth=2)
+plot(maxAnterior, "Máximo del día anterior", color=color.new(color.green, 70), style=plot.style_linebr)
+plot(minAnterior, "Mínimo del día anterior", color=color.new(color.red, 70), style=plot.style_linebr)
+
+bgcolor(enEntradas ? color.new(color.blue, 94) : na)
+bgcolor(enNoticia ? color.new(color.orange, 80) : na)
+bgcolor(limiteDiario or tradesHoy >= maxTradesDay ? color.new(color.red, 92) : na)
+
+// ═══════════════════════ TABLA DE CONTROL ═══════════════════════
+var table info = table.new(position.top_right, 2, 11, bgcolor=color.new(#0d0d0d, 15), border_width=1, border_color=color.gray)
+fila(n, nombre, valor, col) =>
+    table.cell(info, 0, n, nombre, text_color=color.white, text_size=size.small)
+    table.cell(info, 1, n, valor, text_color=col, text_size=size.small)
+
+if barstate.islast
+    listo = puedeOperar and tamanoOk and margenOk
+    posTxt = strategy.position_size > 0 ? "COMPRA " + str.tostring(math.abs(strategy.position_size)) : strategy.position_size < 0 ? "VENTA " + str.tostring(math.abs(strategy.position_size)) : "—"
+    fila(0, "Modo", abrirEnTV ? "Operaciones simuladas" : "Solo señales", abrirEnTV ? color.aqua : color.gray)
+    fila(1, "Cuenta " + tamanoCuenta, "Límite: $" + str.tostring(umbralDD, "#,###"), #ffd700)
+    fila(2, "Margen al límite", "$" + str.tostring(margenDD, "#,###"), margenOk ? color.lime : color.red)
+    fila(3, "Operaciones hoy", str.tostring(tradesHoy) + " / " + str.tostring(maxTradesDay), tradesHoy >= maxTradesDay ? color.red : color.lime)
+    fila(4, "Tamaño", tamanoOk ? str.tostring(ctosCalc) + " cto · riesgo $" + str.tostring(riesgoTotal, "#") : "Stop muy amplio", tamanoOk ? color.yellow : color.red)
+    fila(5, "P&L simulado hoy", (pnlHoy >= 0 ? "+$" : "-$") + str.tostring(math.abs(pnlHoy), "#"), limiteDiario ? color.red : pnlHoy >= 0 ? color.lime : color.orange)
+    fila(6, "Horario de entradas", enEntradas ? "ABIERTO" : "CERRADO", enEntradas ? color.lime : color.gray)
+    fila(7, "Noticias", enNoticia ? "BLOQUEO" : "OK", enNoticia ? color.orange : color.lime)
+    fila(8, "Puede operar", listo ? "SÍ" : "NO", listo ? color.lime : color.red)
+    fila(9, "Operación", posTxt, strategy.position_size > 0 ? color.lime : strategy.position_size < 0 ? color.red : color.gray)
+    fila(10, "SL / TP", enPosicion ? fmt(stopAct) + (enBreakeven ? " (BE)" : "") + " / " + fmt(objetivo) : "—", color.white)

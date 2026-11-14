@@ -12,7 +12,22 @@ operación no cabe en tu riesgo o en el margen de tu cuenta, no la marca y te di
 > fondeo: los valores de drawdown que trae son referenciales. **Verifica siempre las reglas vigentes
 > de tu cuenta en el panel de tu firma.**
 
-Pine Script v5 · probado: carga en TradingView sobre MNQ1!.
+Pine Script v5 · probado: ambas versiones cargan en TradingView sobre MNQ1!.
+
+## Dos versiones
+
+| Archivo | Tipo | Para qué |
+|---|---|---|
+| [`mnq-fondeo-agent.pine`](mnq-fondeo-agent.pine) | Indicador (v5) | Señales, riesgo y control de la cuenta. |
+| [`mnq-fondeo-agent-estrategia.pine`](mnq-fondeo-agent-estrategia.pine) | Estrategia (v6) | Lo mismo, y además **abre y cierra operaciones simuladas solo en TradingView** para copiarlas a mano en tu cuenta. Dibuja zonas de stop loss y take profit, avisa dos veces ("prepárate" y la entrada confirmada) y muestra resultados en el Probador de estrategias. |
+
+La estrategia **no se conecta a ningún bróker ni ejecuta órdenes reales**: muchas firmas de fondeo no
+permiten el trading automatizado, y este diseño deja que copies cada operación tú mismo. Un interruptor
+en la configuración (**Modo**) la deja en "solo señales".
+
+Para recibir los avisos en el celular: botón ⏰ → Condición: la estrategia → **"Cualquier llamada a
+alert()"**. Llegan el "prepárate", la entrada con contratos, SL y TP, el aviso de mover a breakeven y la
+salida.
 
 ## Qué hace
 
@@ -46,9 +61,8 @@ Pine Script v5 · probado: carga en TradingView sobre MNQ1!.
 ## Instalación
 
 1. En TradingView abre un gráfico de **MNQ1!** (de 1 a 5 minutos).
-2. Abajo, pestaña **Pine Editor** → menú del nombre del script → **Crear nuevo** → **Indicador**.
-3. **Borra todo el texto de ejemplo** (Ctrl + A y Supr) y pega el contenido de
-   [`mnq-fondeo-agent.pine`](mnq-fondeo-agent.pine). Si queda el ejemplo, TradingView muestra el error
+2. Abajo, pestaña **Pine Editor** → menú del nombre del script → **Crear nuevo** → **Indicador** (o **Estrategia** para la v6).
+3. **Borra todo el texto de ejemplo** (Ctrl + A y Supr) y pega el contenido del archivo que elegiste. Si queda el ejemplo, TradingView muestra el error
    *"Scripts must contain one declaration statement… Your script has 2 (CE10243)"*.
 4. Pulsa **Guardar** y luego **Añadir al gráfico**.
 5. En la configuración del indicador (⚙️), completa **Cuenta de fondeo**: tamaño, saldo actual y saldo

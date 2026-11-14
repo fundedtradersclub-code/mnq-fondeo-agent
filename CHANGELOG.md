@@ -1,5 +1,19 @@
 # Cambios
 
+## v6 · estrategia (2026-11-14)
+
+Nueva versión como **estrategia** (`mnq-fondeo-agent-estrategia.pine`); el indicador v5 se mantiene.
+
+- Abre y cierra operaciones simuladas solo en TradingView, con un interruptor para dejarla en "solo
+  señales". No ejecuta órdenes en ningún bróker: está pensada para copiar las operaciones a mano.
+- Dibuja cada operación como la herramienta de posición de TradingView: zona verde hasta el take
+  profit, zona roja hasta el stop loss; la zona del stop se pone azul al moverlo a breakeven.
+- Dos avisos: "prepárate" con SL y TP aproximados, y la entrada confirmada con contratos, entrada, SL,
+  TP y riesgo. También avisa de mover el stop a breakeven y de cada salida con su resultado.
+- Resultados en el Probador de estrategias, con comisión (0,62 por contrato y lado) y 1 tick de
+  deslizamiento, sin cálculo de margen (futuros).
+- La pérdida diaria y el P&L del día salen de las operaciones simuladas de la estrategia.
+
 ## v5 (2026-11-14)
 
 Correcciones sobre "Apex 25k Agent Pro v4 - MNQ (Fixed)":
