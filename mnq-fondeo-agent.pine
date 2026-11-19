@@ -2,8 +2,8 @@
 indicator("MNQ Fondeo Agent v5", shorttitle="MNQ Fondeo v5", overlay=true, max_labels_count=200)
 
 // Indicador de apoyo para operar futuros MNQ en cuentas de fondeo (25K / 50K).
-// No es asesoría financiera ni garantiza pasar una evaluación. Sin relación con Apex Trader Funding
-// ni con ninguna firma de fondeo: verifica siempre las reglas vigentes de tu cuenta en su panel.
+// No es asesoría financiera ni garantiza pasar una evaluación. Sin relación con ninguna
+// firma de fondeo: verifica siempre las reglas vigentes de tu cuenta en su panel.
 // Licencia MIT · https://github.com/fundedtradersclub-code/mnq-fondeo-agent
 
 // ═══════════════════════ CUENTA DE FONDEO ═══════════════════════

@@ -16,7 +16,7 @@ Nueva versión como **estrategia** (`mnq-fondeo-agent-estrategia.pine`); el indi
 
 ## v5 (2026-11-14)
 
-Correcciones sobre "Apex 25k Agent Pro v4 - MNQ (Fixed)":
+Correcciones sobre el indicador original (v4):
 
 - **Riesgo con tope real.** En v4 el stop era `max(ATR × multiplicador, riesgo ÷ 2)`: el riesgo en
   dólares funcionaba como stop *mínimo* y, con ATR alto, una operación de 1 contrato podía perder más

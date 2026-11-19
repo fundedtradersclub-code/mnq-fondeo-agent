@@ -8,7 +8,7 @@ cuándo moverlo a breakeven y cuánto dinero te queda antes de tocar el trailing
 operación no cabe en tu riesgo o en el margen de tu cuenta, no la marca y te dice por qué.
 
 > ⚠️ **No es asesoría financiera ni garantiza pasar una evaluación.** Operar futuros implica riesgo
-> de perder dinero. Este indicador no tiene relación con Apex Trader Funding ni con ninguna firma de
+> de perder dinero. Este indicador no tiene relación con ninguna firma de
 > fondeo: los valores de drawdown que trae son referenciales. **Verifica siempre las reglas vigentes
 > de tu cuenta en el panel de tu firma.**
 

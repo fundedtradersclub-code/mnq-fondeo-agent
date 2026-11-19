@@ -3,7 +3,7 @@ strategy("MNQ Fondeo Agent v6 - operaciones simuladas", shorttitle="MNQ Fondeo v
 
 // Abre y cierra operaciones SIMULADAS solo en TradingView, para copiarlas a mano en tu cuenta.
 // No se conecta a ningún bróker. No es asesoría financiera ni garantiza pasar una evaluación.
-// Sin relación con Apex Trader Funding ni con ninguna firma de fondeo: verifica las reglas de tu cuenta.
+// Sin relación con ninguna firma de fondeo: verifica las reglas de tu cuenta.
 // Comisión (0,62 por contrato y lado) y deslizamiento (1 tick) se cambian en Configuración > Propiedades.
 // Licencia MIT · https://github.com/fundedtradersclub-code/mnq-fondeo-agent
 
